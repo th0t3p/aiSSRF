@@ -97,7 +97,11 @@ class AiSsrfConfig(BaseModel):
     )
     ai_scraper_api_key: str = Field(
         default="",
-        description="API key for aiScraper (sent as Bearer token).",
+        description="API key for aiScraper (sent as X-API-Key header).",
+    )
+    ai_scraper_page_size: int = Field(
+        default=200,
+        description="Number of records per page when fetching traffic from aiScraper.",
     )
 
     # -- Burp MCP ---------------------------------------------------------
