@@ -250,6 +250,10 @@ class PayloadGenerator:
             # Encode using each static helper
             for encoder, technique in encoding_map:
                 encoded = encoder(ip)
+                # IPv6 literals in URL authorities must be bracketed per
+                # RFC 3986 §3.2.2 to disambiguate from the port separator.
+                if technique == BypassTechnique.IPV4_MAPPED_IPV6:
+                    encoded = f"[{encoded}]"
                 payload_url = self._reconstruct_url(parsed, new_host=encoded)
                 payloads.append(
                     Payload(

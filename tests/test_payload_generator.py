@@ -302,6 +302,28 @@ class TestGenerate:
         ]
         assert len(ipv6_127) == 1
 
+    def test_ipv6_literals_are_bracketed(self):
+        """Regression: any payload value containing '::' must have that
+        IPv6 literal wrapped in square brackets per RFC 3986 §3.2.2.
+        Covers both IPV4_MAPPED_IPV6 and IPV6_FULL techniques."""
+        gen = PayloadGenerator("collab.example.com")
+        candidate = _make_candidate()
+        payloads = gen.generate(candidate)
+
+        ipv6_payloads = [p for p in payloads if "::" in p.value]
+        assert len(ipv6_payloads) > 0, (
+            "Expected at least one payload containing '::' (IPv6 literal)"
+        )
+        for p in ipv6_payloads:
+            # Match any IPv6-ish segment containing :: that is NOT inside
+            # brackets — this is the bug pattern we're guarding against.
+            import re
+            bare_ipv6 = re.findall(r'(?<!\[)[\w]*::[\w:.]*(?!\])', p.value)
+            assert bare_ipv6 == [], (
+                f"Payload {p.id} has bare IPv6 literal outside brackets: "
+                f"{p.value!r}"
+            )
+
     def test_each_payload_has_description(self):
         """Every payload should carry a non-empty description."""
         gen = PayloadGenerator("collab.example.com")
