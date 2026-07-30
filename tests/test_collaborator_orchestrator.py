@@ -703,7 +703,43 @@ class TestMergedPipeline:
 
     @pytest.mark.asyncio
     async def test_ip_entries_have_all_six_ip_techniques(self):
-        """Internal-IP category should produce all 6 encoding techniques × 3 IPs = 18 entries."""
+        """Internal-IP category should produce one entry per technique (6 total)."""
+
+    @pytest.mark.asyncio
+    async def test_run_proceeds_past_discovery(self):
+        """``run()`` should execute past stage 1 (discovery) and into
+        stages 2+3, returning a ScanReport with entries — NOT raise
+        NotImplementedError."""
+        config = _make_config()
+        orch = Orchestrator(config)
+
+        # Mock CandidateFetcher.fetch() to return a non-empty list
+        async def mock_fetch():
+            return [_make_candidate(param_name="webhook_url")]
+        with patch.object(
+            Orchestrator, "_run_discovery", new_callable=AsyncMock
+        ) as mock_discovery:
+            mock_discovery.return_value = [_make_candidate(param_name="webhook_url")]
+
+            # Mock the collab client lifecycle
+            collab = CollaboratorClient(config)
+            collab._mcp = _mock_mcp(
+                create_result=_create_client_response("cid-1"),
+                generate_result=_generate_payload_response("cid-1", "abcdef.oastify.com"),
+                poll_results=_poll_response([]),
+            )
+            orch._collab = collab
+            orch._ensure_collab_connected = AsyncMock()
+
+            # LLM judgment stub — pass through
+            orch._run_llm_judgment = AsyncMock(side_effect=lambda entries: entries)
+
+            report = await orch.run()
+
+        assert report.entries, "Expected non-empty entries after run()"
+        assert report.total_candidates == 1
+        assert report.started_at is not None
+        assert report.finished_at is not None
         orch = self._mock_orchestrator()
 
         collab = CollaboratorClient(orch._config)

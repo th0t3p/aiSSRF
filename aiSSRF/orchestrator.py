@@ -128,14 +128,14 @@ class Orchestrator:
         return report
 
     # ------------------------------------------------------------------
-    # Stage 1: discovery (stub)
+    # Stage 1: discovery
     # ------------------------------------------------------------------
 
     async def _run_discovery(self) -> list[CandidateEndpoint]:
         """Fetch candidates from aiScraper."""
         if self._fetcher is None:
             self._fetcher = CandidateFetcher(self._config)
-        raise NotImplementedError("stub — calls self._fetcher.fetch()")
+        return await self._fetcher.fetch()
 
     # ------------------------------------------------------------------
     # Stages 2+3 merged: payload generation + OAST verification
