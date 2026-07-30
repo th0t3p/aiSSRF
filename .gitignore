@@ -1,0 +1,7 @@
+# Vendored / virtualenv site-packages
+**/lib/python3.10/site-packages/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
