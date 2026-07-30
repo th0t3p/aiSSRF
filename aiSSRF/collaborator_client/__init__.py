@@ -320,22 +320,42 @@ class CollaboratorClient:
         if self._http_send_tool is None:
             tools = await self._mcp.list_tools()
             candidates = [t for t in tools if isinstance(t, dict)]
-            # Search for a tool whose name contains a known pattern
-            patterns = ["send", "request", "http"]
             match: Optional[str] = None
+            discovery_path: str = "none"
+
+            # 1) Exact match for the confirmed BurpMCP-Ultra tool name.
+            #    This avoids accidentally selecting "http_send_request_chain"
+            #    or "http_send_requests_parallel" which also satisfy the
+            #    substring fuzzy match below.
+            confirmed_name = "http_send_request"
             for tool in candidates:
-                name = tool.get("name", "")
-                name_lower = name.lower()
-                if all(p in name_lower for p in patterns):
-                    match = name
+                if tool.get("name") == confirmed_name:
+                    match = confirmed_name
+                    discovery_path = "exact"
                     break
-            # Fallback: any tool with "send" in the name
+
+            # 2) Fuzzy fallback: tool name containing "send", "request",
+            #    AND "http" (any case).  Only used when the exact match
+            #    above finds nothing (e.g. a future version renames the tool).
+            if match is None:
+                patterns = ["send", "request", "http"]
+                for tool in candidates:
+                    name = tool.get("name", "")
+                    name_lower = name.lower()
+                    if all(p in name_lower for p in patterns):
+                        match = name
+                        discovery_path = "fuzzy-all-three"
+                        break
+
+            # 3) Broader fuzzy fallback: any tool with "send" or "request".
             if match is None:
                 for tool in candidates:
                     name = tool.get("name", "")
                     if "send" in name.lower() or "request" in name.lower():
                         match = name
+                        discovery_path = "fuzzy-send-or-request"
                         break
+
             if match is None:
                 available = [t.get("name", "?") for t in candidates]
                 raise RuntimeError(
@@ -343,7 +363,11 @@ class CollaboratorClient:
                     f"Available tools: {available}"
                 )
             self._http_send_tool = match
-            logger.info("Discovered HTTP-send tool: %r", self._http_send_tool)
+            logger.info(
+                "Discovered HTTP-send tool %r (path=%s)",
+                self._http_send_tool,
+                discovery_path,
+            )
 
         # --- Build arguments -----------------------------------------------
         arguments: dict = {

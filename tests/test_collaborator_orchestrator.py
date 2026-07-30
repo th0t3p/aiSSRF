@@ -505,6 +505,61 @@ class TestBuildRequest:
         assert url.endswith("/http://collab.com") or "/http://collab.com" in url
 
 
+class TestSendRequestToolDiscovery:
+    """Tests for the exact-match → fuzzy fallback tool-discovery logic in
+    ``CollaboratorClient.send_request()``."""
+
+    @pytest.mark.asyncio
+    async def test_exact_match_wins_over_fuzzy_variants(self):
+        """When ``http_send_request`` AND ``http_send_request_chain`` are
+        both present in ``list_tools()``, the exact match must select
+        ``http_send_request``, not the chain or parallel variants."""
+        client = CollaboratorClient(_make_config())
+        mcp = _mock_mcp()
+        # Override list_tools to include the chain variant
+        mcp.list_tools = AsyncMock(return_value=[
+            {"name": "collaborator_create_client"},
+            {"name": "collaborator_generate_payload"},
+            {"name": "collaborator_poll"},
+            {"name": "http_send_request_chain"},
+            {"name": "http_send_requests_parallel"},
+            {"name": "http_send_request"},
+        ])
+        client._mcp = mcp
+
+        await client.send_request(
+            "c1", "GET", "https://example.com/", {}, None,
+        )
+
+        assert client._http_send_tool == "http_send_request", (
+            f"Expected exact match 'http_send_request', "
+            f"got {client._http_send_tool!r}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_fuzzy_fallback_when_exact_match_absent(self):
+        """When the confirmed tool name is NOT present, fall back to fuzzy
+        matching so a renamed tool in a future version still works."""
+        client = CollaboratorClient(_make_config())
+        mcp = _mock_mcp()
+        mcp.list_tools = AsyncMock(return_value=[
+            {"name": "collaborator_create_client"},
+            {"name": "collaborator_generate_payload"},
+            {"name": "collaborator_poll"},
+            {"name": "send_http_request_v2"},  # renamed future version
+        ])
+        client._mcp = mcp
+
+        await client.send_request(
+            "c1", "GET", "https://example.com/", {}, None,
+        )
+
+        assert client._http_send_tool == "send_http_request_v2", (
+            f"Expected fuzzy match 'send_http_request_v2', "
+            f"got {client._http_send_tool!r}"
+        )
+
+
 class TestMergedPipeline:
     """Integration-style tests for _run_payload_and_verification.
 
