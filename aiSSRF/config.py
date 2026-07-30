@@ -210,6 +210,11 @@ class Payload(BaseModel):
         description="Which bypass techniques this payload exercises.",
     )
     description: str = Field(default="")
+    collaborator_domain: Optional[str] = Field(
+        default=None,
+        description="Collaborator domain used by this payload, if OAST-category. "
+        "None for internal-IP-encoding payloads.",
+    )
 
 
 class CollaboratorPayload(BaseModel):
@@ -224,10 +229,18 @@ class CollaboratorPayload(BaseModel):
 
 
 class Interaction(BaseModel):
-    """A single Collaborator interaction record."""
+    """A single Collaborator interaction record.
 
-    protocol: str = Field(description="dns | http | smtp")
-    source_ip: str = Field(description="IP that made the callback.")
+    Matches the real BurpMCP-Ultra interaction schema: ``type``,
+    ``client_ip``, ``client_port``, ``timestamp``, plus optional
+    ``dns_details`` / ``http_details`` / ``smtp_details`` and
+    ``custom_data``.
+    """
+
+    protocol: str = Field(
+        description="Interaction type returned by BurpMCP-Ultra: dns | http | smtp."
+    )
+    client_ip: str = Field(description="IP that made the callback.")
     timestamp: datetime = Field(description="When the interaction was received.")
     raw_request: Optional[str] = Field(default=None)
 
@@ -241,7 +254,7 @@ class VerificationResult(BaseModel):
     interactions: list[Interaction] = Field(default_factory=list)
     in_target_infra: bool = Field(
         default=False,
-        description="True if any interaction's source_ip falls inside target_cidrs.",
+        description="True if any interaction's client_ip falls inside target_cidrs.",
     )
     false_positive: bool = Field(
         default=False,
