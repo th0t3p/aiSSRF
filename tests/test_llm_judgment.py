@@ -275,6 +275,43 @@ class TestParseResponse:
         assert result.payload_id == "CALLER-P1"
         assert result.model_used == "CALLER-MODEL"
 
+    def test_regression_fully_fenced_parses(self):
+        """Exact reproduction from bug report: fully-wrapped response with
+        both ````json` and closing ```` ``` ```` must parse correctly."""
+        text = (
+            '```json\n'
+            '{"verdict":"confirmed","severity":"high",'
+            '"reasoning":"callback from target infrastructure",'
+            '"chainable_to":["credential_leak"],'
+            '"suggested_next_step":"escalate to manual review"}'
+            '\n```'
+        )
+        result = self._judge()._parse_response(
+            {"content": [{"text": text}], "_provider": "anthropic"},
+            candidate_id="c-repro", payload_id="p-repro", model_used="m",
+        )
+        assert result.verdict.value == "confirmed"
+        assert result.severity.value == "high"
+        assert result.reasoning == "callback from target infrastructure"
+        assert result.chainable_to == ["credential_leak"]
+
+    def test_regression_leading_fence_only_still_parses(self):
+        """Leading-only fence (no trailing ```` ``` ```` — some models
+        truncate) must still parse correctly after the combined-regex fix."""
+        text = (
+            '```json\n'
+            '{"verdict":"false_positive","severity":"low",'
+            '"reasoning":"likely sandbox callback",'
+            '"chainable_to":[],'
+            '"suggested_next_step":"document as false positive"}'
+        )
+        result = self._judge()._parse_response(
+            {"content": [{"text": text}], "_provider": "anthropic"},
+            candidate_id="c-lead", payload_id="p-lead", model_used="m",
+        )
+        assert result.verdict.value == "false_positive"
+        assert result.severity.value == "low"
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # judge() integration — mocks httpx

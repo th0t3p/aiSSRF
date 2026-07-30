@@ -36,9 +36,10 @@ from aiSSRF.config import (
 
 logger = logging.getLogger(__name__)
 
-# Patterns for stripping markdown code fences from LLM responses.
-_MD_FENCE_RE = re.compile(r"^```(?:json)?\s*", re.IGNORECASE)
-_MD_CLOSE_RE = re.compile(r"\s*```\s*$")
+# Single regex that strips both leading and trailing markdown code fences
+# in one pass.  Anchored at ^ (start) for the opening fence and $ (end)
+# for the closing fence so only outer wrapping is affected.
+_MD_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 
 
 class LlmJudgment:
@@ -306,9 +307,10 @@ class LlmJudgment:
                 f"LLM response contained no text content. Raw: {json.dumps(raw)[:500]}"
             )
 
-        # Strip markdown code fences
-        cleaned = _MD_FENCE_RE.sub("", text.strip())
-        cleaned = _MD_CLOSE_RE.sub("", cleaned).strip()
+        # Strip markdown code fences (leading + trailing in one pass).
+        # strip() first so the ^/$ anchors match even with surrounding
+        # whitespace/newlines.
+        cleaned = _MD_FENCE_RE.sub("", text.strip()).strip()
 
         try:
             parsed = json.loads(cleaned)
