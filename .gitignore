@@ -21,6 +21,12 @@ ENV/
 **/lib/python3.*/site-packages/
 **/lib64/python3.*/site-packages/
 
+# Symlink variant not caught by the nested lib pattern above
+**/lib64
+
+# Python packaging artifacts
+*.egg-info/
+
 # Python cache
 __pycache__/
 *.pyc
