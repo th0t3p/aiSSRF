@@ -1,5 +1,25 @@
-# Vendored / virtualenv site-packages
-**/lib/python3.10/site-packages/
+# Virtualenvs — matched generically via their marker file, so this
+# catches ANY venv regardless of what it's named (this has recurred
+# under multiple different directory names already)
+**/pyvenv.cfg
+**/bin/activate
+**/bin/activate.*
+**/bin/python
+**/bin/python[0-9]*
+**/bin/pip
+**/bin/pip[0-9]*
+**/bin/Activate.ps1
+**/Scripts/activate*
+
+# Belt-and-suspenders: common conventional venv directory names
+venv/
+.venv/
+env/
+ENV/
+
+# Vendored site-packages at any Python version, not just 3.10
+**/lib/python3.*/site-packages/
+**/lib64/python3.*/site-packages/
 
 # Python cache
 __pycache__/
