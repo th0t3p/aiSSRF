@@ -225,16 +225,24 @@ class Orchestrator:
         return entries
 
     # ------------------------------------------------------------------
-    # Stage 4: LLM judgment (stub)
+    # Stage 4: LLM judgment (only for entries with hits)
     # ------------------------------------------------------------------
 
     async def _run_llm_judgment(
         self, entries: list[ReportEntry]
     ) -> list[ReportEntry]:
-        """For each entry with verified interactions, call the LLM."""
-        raise NotImplementedError(
-            "stub — skips entries w/o hits, calls LlmJudgment.judge() for the rest"
-        )
+        """For each entry with hit=True (at least one interaction), call
+        the LLM.  Entries with hit=False keep verdict=None — they were
+        never probed with OAST-collaborator payloads."""
+        if self._llm is None:
+            self._llm = LlmJudgment(self._config)
+        for entry in entries:
+            if not entry.verification.hit:
+                continue  # nothing to judge — no interactions at all
+            entry.verdict = await self._llm.judge(
+                entry.candidate, entry.payload, entry.verification
+            )
+        return entries
 
     # ------------------------------------------------------------------
     # Request construction

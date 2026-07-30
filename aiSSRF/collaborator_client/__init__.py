@@ -164,6 +164,9 @@ class CollaboratorClient:
                             ts.replace("Z", "+00:00")
                         ),
                         raw_request=raw.get("raw_request"),
+                        dns_details=raw.get("dns_details"),
+                        http_details=raw.get("http_details"),
+                        smtp_details=raw.get("smtp_details"),
                     )
                 )
             except (ValueError, TypeError) as exc:

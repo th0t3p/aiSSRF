@@ -243,6 +243,15 @@ class Interaction(BaseModel):
     client_ip: str = Field(description="IP that made the callback.")
     timestamp: datetime = Field(description="When the interaction was received.")
     raw_request: Optional[str] = Field(default=None)
+    dns_details: Optional[dict] = Field(
+        default=None, description="DNS query details (query_type, query_name, query_hex)."
+    )
+    http_details: Optional[dict] = Field(
+        default=None, description="HTTP request details (protocol, method, url, status)."
+    )
+    smtp_details: Optional[dict] = Field(
+        default=None, description="SMTP conversation details."
+    )
 
 
 class VerificationResult(BaseModel):
