@@ -5,3 +5,8 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# Local environment config — never commit real secrets
+.env
+.env.local
+.env.*.local

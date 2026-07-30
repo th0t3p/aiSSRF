@@ -40,20 +40,23 @@ aiScraper REST API
 
 ## Quick Start
 
-```python
-import asyncio
+```bash
+# 1. Copy the example env file and fill in real values
+cp .env.example .env
+# $EDITOR .env   ← set AISSRF_AUTHORIZED_SCOPE, API keys, etc.
+
+# 2. Run — AiSsrfConfig() loads from .env automatically
+python3 -c "
 from aiSSRF.config import AiSsrfConfig
 from aiSSRF.orchestrator import Orchestrator
 
-config = AiSsrfConfig(
-    ai_scraper_api_url="http://localhost:8000",
-    ai_scraper_api_key="sk-...",
-    burp_mcp_url="http://127.0.0.1:9876",
-    authorized_scope=["example.com", "*.target.org"],
-)
+config = AiSsrfConfig()          # loads .env + env vars
+# Explicit kwargs still work too and override .env:
+# config = AiSsrfConfig(authorized_scope=['example.com'])
 orch = Orchestrator(config)
 report = asyncio.run(orch.run())
 print(report.model_dump_json(indent=2))
+"
 ```
 
 ## Dependencies

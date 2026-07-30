@@ -20,6 +20,8 @@ from pydantic import (
     AnyUrl,
 )
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 # =========================================================================
 # Enums
@@ -82,13 +84,23 @@ def _in_scope(host: str, scope: list[str]) -> bool:
 # Config
 # =========================================================================
 
-class AiSsrfConfig(BaseModel):
+class AiSsrfConfig(BaseSettings):
     """Top-level configuration.
 
     All network-side-effect fields are gated behind ``authorized_scope``:
     if the list is empty the orchestrator refuses to run **any** stage
     that would touch the target (fail-closed).
+
+    Loads values from environment variables (prefixed ``AISSRF_``) and a
+    ``.env`` file automatically.  Explicit kwargs override both.
     """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="AISSRF_",
+        extra="ignore",
+    )
 
     # -- aiScraper --------------------------------------------------------
     ai_scraper_api_url: str = Field(
