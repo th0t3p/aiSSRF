@@ -45,18 +45,14 @@ aiScraper REST API
 cp .env.example .env
 # $EDITOR .env   ← set AISSRF_AUTHORIZED_SCOPE, API keys, etc.
 
-# 2. Run — AiSsrfConfig() loads from .env automatically
-python3 -c "
-from aiSSRF.config import AiSsrfConfig
-from aiSSRF.orchestrator import Orchestrator
-
-config = AiSsrfConfig()          # loads .env + env vars
-# Explicit kwargs still work too and override .env:
-# config = AiSsrfConfig(authorized_scope=['example.com'])
-orch = Orchestrator(config)
-report = asyncio.run(orch.run())
-print(report.model_dump_json(indent=2))
-"
+# 2. Run — two equivalent ways:
+python -m aiSSRF
+# or, after `pip install -e .`:
+aissrf
+# optional: write report to file with verbose logging
+aissrf --output report.json -v
+# override scope for a single run without editing .env:
+aissrf --scope '*.example.com' --scope other.com
 ```
 
 ## Dependencies

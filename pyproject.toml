@@ -20,5 +20,8 @@ dev = [
     "pytest-asyncio>=0.23",
 ]
 
+[project.scripts]
+aissrf = "aiSSRF.__main__:_sync_main"
+
 [tool.setuptools.packages.find]
 where = ["."]
