@@ -128,3 +128,54 @@ class TestEnvLoading:
         # Should not raise
         config = AiSsrfConfig(_env_file=str(env_file), _env_file_encoding="utf-8")
         assert config.ai_scraper_api_url == "http://localhost:8000"  # default
+
+
+class TestRedactedConfigSummary:
+    def test_llm_api_key_is_redacted(self):
+        from aiSSRF.orchestrator import _redacted_config_summary
+
+        config = AiSsrfConfig(
+            _env_file=None,
+            llm_api_key="sk-1234567890abcdef",
+        )
+        summary = _redacted_config_summary(config)
+        assert "sk-1234567890abcdef" not in str(summary)
+        assert summary["llm_api_key"] == "***cdef"
+
+    def test_burp_mcp_auth_token_is_redacted(self):
+        from aiSSRF.orchestrator import _redacted_config_summary
+
+        config = AiSsrfConfig(
+            _env_file=None,
+            burp_mcp_auth_token="super-secret-token-for-burp",
+        )
+        summary = _redacted_config_summary(config)
+        assert "super-secret-token-for-burp" not in str(summary)
+        assert summary["burp_mcp_auth_token"] == "***burp"
+
+    def test_short_token_is_redacted(self):
+        from aiSSRF.orchestrator import _redacted_config_summary
+
+        config = AiSsrfConfig(_env_file=None, llm_api_key="ab")
+        summary = _redacted_config_summary(config)
+        assert summary["llm_api_key"] == "***"
+
+    def test_empty_secrets_stay_empty(self):
+        from aiSSRF.orchestrator import _redacted_config_summary
+
+        config = AiSsrfConfig(_env_file=None)
+        summary = _redacted_config_summary(config)
+        assert summary["llm_api_key"] == ""
+        assert summary["burp_mcp_auth_token"] is None
+
+    def test_non_secret_fields_are_unredacted(self):
+        from aiSSRF.orchestrator import _redacted_config_summary
+
+        config = AiSsrfConfig(
+            _env_file=None,
+            llm_provider="deepseek",
+            llm_model="deepseek-chat",
+        )
+        summary = _redacted_config_summary(config)
+        assert summary["llm_provider"] == "deepseek"
+        assert summary["llm_model"] == "deepseek-chat"

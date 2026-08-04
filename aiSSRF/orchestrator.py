@@ -49,6 +49,25 @@ from aiSSRF.llm_judgment import LlmJudgment
 
 logger = logging.getLogger(__name__)
 
+# Fields whose values must never appear verbatim in any serialised report.
+_SECRET_FIELDS = {"llm_api_key", "ai_scraper_api_key", "burp_mcp_auth_token"}
+
+
+def _redact(value: str | None) -> str | None:
+    """Return a redacted version of *value*, showing only the last 4 chars."""
+    if not value:
+        return value
+    return f"***{value[-4:]}" if len(value) > 4 else "***"
+
+
+def _redacted_config_summary(config: AiSsrfConfig) -> dict:
+    """Return ``config.model_dump()`` with every secret field redacted."""
+    summary = config.model_dump()
+    for field in _SECRET_FIELDS:
+        if field in summary:
+            summary[field] = _redact(summary[field])
+    return summary
+
 # Techniques that encode a fixed internal IP — not OAST-verifiable.
 _IP_TECHNIQUES = frozenset({
     BypassTechnique.IP_DECIMAL,
@@ -95,9 +114,7 @@ class Orchestrator:
             )
 
         report = ScanReport(
-            config_summary=self._config.model_dump(
-                exclude={"ai_scraper_api_key", "llm_api_key"}
-            ),
+            config_summary=_redacted_config_summary(self._config),
             started_at=datetime.now(timezone.utc),
         )
 
