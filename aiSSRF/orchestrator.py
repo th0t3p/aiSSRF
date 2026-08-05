@@ -27,7 +27,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
 
 from aiSSRF.config import (
@@ -43,6 +43,7 @@ from aiSSRF.config import (
     Severity,
 )
 from aiSSRF.candidate_fetcher import CandidateFetcher
+from aiSSRF.candidate_fetcher.local_file import LocalFileCandidateFetcher
 from aiSSRF.payload_generator import PayloadGenerator
 from aiSSRF.collaborator_client import CollaboratorClient
 from aiSSRF.llm_judgment import LlmJudgment
@@ -89,7 +90,7 @@ class Orchestrator:
         self._config = config
 
         # Lazy-init sub-modules
-        self._fetcher: Optional[CandidateFetcher] = None
+        self._fetcher: Optional[Union[CandidateFetcher, LocalFileCandidateFetcher]] = None
         self._collab: Optional[CollaboratorClient] = None
         self._llm: Optional[LlmJudgment] = None
 
@@ -149,9 +150,12 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     async def _run_discovery(self) -> list[CandidateEndpoint]:
-        """Fetch candidates from aiScraper."""
+        """Fetch candidates from the configured source (api or local_file)."""
         if self._fetcher is None:
-            self._fetcher = CandidateFetcher(self._config)
+            if self._config.candidate_source == "local_file":
+                self._fetcher = LocalFileCandidateFetcher(self._config)
+            else:
+                self._fetcher = CandidateFetcher(self._config)
         return await self._fetcher.fetch()
 
     # ------------------------------------------------------------------

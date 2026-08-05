@@ -174,6 +174,30 @@ class AiSsrfConfig(BaseSettings):
     llm_max_tokens: int = Field(default=1024)
     llm_temperature: float = Field(default=0.0)
 
+    # -- Candidate source --------------------------------------------------
+    candidate_source: str = Field(
+        default="api",
+        description="Where to pull SSRF candidates from: 'api' (aiScraper REST API) or 'local_file' (aiBrowser index.jsonl).",
+    )
+
+    local_traffic_dir: str = Field(
+        default="",
+        description="Path to an aiBrowser traffic capture directory (index.jsonl + bodies/). Required when candidate_source='local_file'.",
+    )
+
+    @field_validator("candidate_source")
+    @classmethod
+    def _validate_candidate_source(cls, v: str) -> str:
+        if v not in ("api", "local_file"):
+            raise ValueError(f"candidate_source must be 'api' or 'local_file', got {v!r}")
+        return v
+
+    @model_validator(mode="after")
+    def _local_file_requires_traffic_dir(self):
+        if self.candidate_source == "local_file" and not self.local_traffic_dir:
+            raise ValueError("local_traffic_dir is required when candidate_source='local_file'")
+        return self
+
     @field_validator("authorized_scope")
     @classmethod
     def _scope_not_empty_for_prod(cls, v: list[str]) -> list[str]:
